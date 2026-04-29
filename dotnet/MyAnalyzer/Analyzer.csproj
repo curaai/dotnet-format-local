@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>12</LangVersion>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <AssemblyName>CustomAnalyzer</AssemblyName>
+    <RootNamespace>Analyzer</RootNamespace>
+    <IsRoslynComponent>true</IsRoslynComponent>
+
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <!-- Release에서만: 최소 로그(-v:m)에서도 보이게 Importance=high, 경로는 csproj 기준 -->
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Release'">
+    <PropertyGroup>
+      <_AnalyzerDeployDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\Assets\Plugins\Editor\Analyzers'))</_AnalyzerDeployDir>
+    </PropertyGroup>
+    <Message Text="[CustomAnalyzer PostBuild] Configuration=$(Configuration)" Importance="high" />
+    <Message Text="[CustomAnalyzer PostBuild] Copy: $(TargetPath)" Importance="high" />
+    <Message Text="[CustomAnalyzer PostBuild]  To: $(_AnalyzerDeployDir)\" Importance="high" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(_AnalyzerDeployDir)\" SkipUnchangedFiles="false" />
+    <Message Text="[CustomAnalyzer PostBuild] Done." Importance="high" />
+  </Target>
+
+  <ItemGroup>
+    <!--
+    MemoryPack.Generator에서 사용하는 버전으로 맞춤
+    -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="4.3.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" Version="3.3.3" />
+  </ItemGroup>
+
+  <!-- CodeFixes는 별도 Analyzer.CodeFixes.csproj (Workspaces 의존) -->
+  <ItemGroup>
+    <Compile Remove="CodeFixes\**\*.cs" />
+  </ItemGroup>
+</Project>
