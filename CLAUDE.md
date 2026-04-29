@@ -6,15 +6,27 @@
 
 Unity/C# 프로젝트("canary")에 pre-commit 자동 포매팅을 설정하는 유틸리티 모음입니다. `lint-staged` + `dotnet format`을 husky pre-commit 훅으로 설치하며, 대상 프로젝트의 모든 git worktree에서 공유됩니다.
 
+## 파일 구조
+
+```
+apply-canary-husky-user-gitconfig.sh   # 메인 설정 스크립트 (개발자 머신당 1회 실행)
+installer/
+  canary-husky-pre-commit.sh           # → 대상 프로젝트 .husky/pre-commit 으로 복사
+  dotnet-format-staged.sh              # → 대상 프로젝트 utils/dotnet-format-staged.sh 으로 복사
+  canary-root-package.json             # → 대상 프로젝트 package.json 으로 복사
+utils/
+  fixup-by-lastcommit.sh              # 독립 유틸리티 (husky 설정과 무관)
+```
+
 ## 스크립트
 
 | 스크립트 | 역할 |
 |---|---|
 | `apply-canary-husky-user-gitconfig.sh` | **메인 설정 스크립트.** 개발자 머신당 1회 실행하여 전체 설정을 완료합니다. |
-| `canary-husky-pre-commit.sh` | `.husky/pre-commit` 템플릿 — 대상 프로젝트에 복사됩니다. |
-| `canary-root-package.json` | `package.json` 템플릿 — 대상 프로젝트에 없을 경우 복사됩니다. |
-| `dotnet-format-staged.sh` | `scripts/dotnet-format-staged.sh` 템플릿 — 스테이징된 `*.cs` 파일에 `dotnet format`을 실행합니다. |
-| `fixup-by-lastcommit.sh` | 독립 유틸리티: 변경된 각 파일에 대해 해당 파일의 마지막 커밋을 대상으로 `--fixup` 커밋을 생성합니다. |
+| `installer/canary-husky-pre-commit.sh` | `.husky/pre-commit` 템플릿 — 대상 프로젝트에 복사됩니다. |
+| `installer/canary-root-package.json` | `package.json` 템플릿 — 대상 프로젝트에 없을 경우 복사됩니다. |
+| `installer/dotnet-format-staged.sh` | `utils/dotnet-format-staged.sh` 템플릿 — 스테이징된 `*.cs` 파일에 `dotnet format`을 실행합니다. |
+| `utils/fixup-by-lastcommit.sh` | 독립 유틸리티: 변경된 각 파일에 대해 해당 파일의 마지막 커밋을 대상으로 `--fixup` 커밋을 생성합니다. |
 
 ## 설정 방법
 

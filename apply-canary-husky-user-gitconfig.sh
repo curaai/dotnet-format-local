@@ -150,9 +150,9 @@ fi
 
 # ── 4. pre-commit + dotnet format (lint-staged) 템플릿이 없으면 utils 에서 복사 ─
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-_tpl_pre="${SCRIPT_DIR}/canary-husky-pre-commit.sh"
-_tpl_fmt="${SCRIPT_DIR}/dotnet-format-staged.sh"
-_tpl_pkg="${SCRIPT_DIR}/canary-root-package.json"
+_tpl_pre="${SCRIPT_DIR}/installer/canary-husky-pre-commit.sh"
+_tpl_fmt="${SCRIPT_DIR}/installer/dotnet-format-staged.sh"
+_tpl_pkg="${SCRIPT_DIR}/installer/canary-root-package.json"
 if [[ -f "$_tpl_pre" ]]; then
   mkdir -p "$CANARY_REPO_ROOT/.husky"
   if [[ ! -f "$CANARY_REPO_ROOT/.husky/pre-commit" ]]; then
