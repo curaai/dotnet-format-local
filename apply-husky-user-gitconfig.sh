@@ -15,6 +15,8 @@
 
 set -euo pipefail
 
+INSTALLER_VERSION="1"
+
 # npm 이 필요할 때: PATH 앞의 "node"가 Cursor 등 IDE 번들(node만 있고 npm 없음)이면 npm 을 못 찹니다.
 # 공식 Node.js 설치 경로를 PATH 앞에 넣어 실제 npm.cmd 를 쓰게 합니다.
 prepend_full_nodejs_to_path() {
@@ -198,41 +200,54 @@ else
   fi
 fi
 
-# ── 4. pre-commit + dotnet format (lint-staged) 템플릿이 없으면 utils 에서 복사 ─
+# ── 4. pre-commit + dotnet format (lint-staged) 템플릿 설치/업데이트 ──────────
+# 설치된 파일의 버전이 INSTALLER_VERSION 과 다르면 덮어씌운다.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _tpl_pre="${SCRIPT_DIR}/installer/husky-pre-commit.sh"
 _tpl_fmt="${SCRIPT_DIR}/installer/dotnet-format-staged.sh"
 _tpl_pkg="${SCRIPT_DIR}/installer/root-package.json"
-if [[ -f "$_tpl_pre" ]]; then
-  mkdir -p "$TARGET_REPO_ROOT/.husky"
-  if [[ ! -f "$TARGET_REPO_ROOT/.husky/pre-commit" ]]; then
-    cp "$_tpl_pre" "$TARGET_REPO_ROOT/.husky/pre-commit"
-    chmod +x "$TARGET_REPO_ROOT/.husky/pre-commit" 2>/dev/null || true
-    echo "[4/4] Installed .husky/pre-commit (lint-staged → dotnet format)"
-  else
-    echo "[4/4] .husky/pre-commit already exists — skip (delete to reinstall from utils template)."
+
+# 셸 스크립트에서 "# @pre-commit-format v<N>" 마커를 읽는다. 없으면 빈 문자열.
+_read_sh_version() {
+  if [[ -f "$1" ]]; then
+    sed -n 's/^# @pre-commit-format v\([^ ]*\).*/\1/p' "$1" | head -n1
   fi
-else
-  echo "WARN: 템플릿 없음: $_tpl_pre — pre-commit 을 수동으로 추가하세요." >&2
-fi
-if [[ -f "$_tpl_fmt" ]]; then
-  mkdir -p "$TARGET_REPO_ROOT/scripts"
-  if [[ ! -f "$TARGET_REPO_ROOT/scripts/dotnet-format-staged.sh" ]]; then
-    cp "$_tpl_fmt" "$TARGET_REPO_ROOT/scripts/dotnet-format-staged.sh"
-    chmod +x "$TARGET_REPO_ROOT/scripts/dotnet-format-staged.sh" 2>/dev/null || true
-    echo "[4/4] Installed scripts/dotnet-format-staged.sh"
-  else
-    echo "[4/4] scripts/dotnet-format-staged.sh already exists — skip."
+}
+# package.json 에서 "_pre_commit_format_version" 필드를 읽는다.
+_read_pkg_version() {
+  if [[ -f "$1" ]] && command -v node >/dev/null 2>&1; then
+    node -e "try{const d=JSON.parse(require('fs').readFileSync('$1','utf8'));process.stdout.write(d._pre_commit_format_version||'')}catch(e){}" 2>/dev/null || true
   fi
-fi
-if [[ -f "$_tpl_pkg" ]]; then
-  if [[ ! -f "$TARGET_REPO_ROOT/package.json" ]]; then
-    cp "$_tpl_pkg" "$TARGET_REPO_ROOT/package.json"
-    echo "[4/4] Installed package.json (lint-staged + *.cs → dotnet format)"
-  else
-    echo "[4/4] package.json already exists — skip (merge lint-staged manually if needed)."
+}
+
+_install_tpl() {
+  local _src="$1" _dst="$2" _label="$3" _cur_ver="$4"
+  if [[ ! -f "$_src" ]]; then
+    echo "WARN: 템플릿 없음: $_src — $_label 을 수동으로 추가하세요." >&2
+    return
   fi
-fi
+  mkdir -p "$(dirname "$_dst")"
+  if [[ ! -f "$_dst" ]]; then
+    cp "$_src" "$_dst"
+    chmod +x "$_dst" 2>/dev/null || true
+    echo "[4/4] Installed $_label (v${INSTALLER_VERSION})"
+  elif [[ "$_cur_ver" != "$INSTALLER_VERSION" ]]; then
+    cp "$_src" "$_dst"
+    chmod +x "$_dst" 2>/dev/null || true
+    echo "[4/4] Updated $_label (v${_cur_ver:-?} → v${INSTALLER_VERSION})"
+  else
+    echo "[4/4] $_label already up to date (v${INSTALLER_VERSION}) — skip."
+  fi
+}
+
+_install_tpl "$_tpl_pre" "$TARGET_REPO_ROOT/.husky/pre-commit" \
+  ".husky/pre-commit" "$(_read_sh_version "$TARGET_REPO_ROOT/.husky/pre-commit")"
+
+_install_tpl "$_tpl_fmt" "$TARGET_REPO_ROOT/scripts/dotnet-format-staged.sh" \
+  "scripts/dotnet-format-staged.sh" "$(_read_sh_version "$TARGET_REPO_ROOT/scripts/dotnet-format-staged.sh")"
+
+_install_tpl "$_tpl_pkg" "$TARGET_REPO_ROOT/package.json" \
+  "package.json" "$(_read_pkg_version "$TARGET_REPO_ROOT/package.json")"
 
 echo ""
 echo "새 worktree 추가 시 별도 설치 불필요 — 이 스크립트를 다시 실행할 필요 없음."

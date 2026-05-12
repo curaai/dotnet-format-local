@@ -38,7 +38,7 @@ bash apply-husky-user-gitconfig.sh <대상-저장소-경로>
 1. `~/.gitconfig`에 `[includeIf "gitdir/i:<저장소-루트>/"]` 항목을 추가하여 해당 저장소 안에서만 `core.hooksPath = .husky`가 적용되도록 합니다.
 2. 저장소 자체 git config에 설정된 `core.hooksPath`를 제거합니다(사용자 include로 위임).
 3. `<git-common-dir>/husky-deps/`에 `lint-staged`를 설치합니다 — 모든 worktree가 공유하며 커밋되지 않습니다.
-4. 3개의 템플릿 파일을 대상 저장소에 복사합니다(이미 존재하면 건너뜁니다).
+4. 3개의 템플릿 파일을 대상 저장소에 복사합니다. 각 파일에 `@pre-commit-format v<N>` 버전 마커가 있어 기존 파일의 버전이 다르면 덮어씌우고, 같으면 건너뜁니다.
 
 ## 아키텍처
 
@@ -46,7 +46,7 @@ bash apply-husky-user-gitconfig.sh <대상-저장소-경로>
 - `core.hooksPath`는 저장소 config가 아닌 `~/.gitconfig` `includeIf`로 설정되므로, 새 worktree를 추가해도 설정 스크립트를 재실행할 필요가 없습니다.
 - `lint-staged`는 git common dir(`.git/husky-deps/`) 안에 설치되어 모든 worktree가 단일 설치본을 공유합니다.
 - `dotnet-format-staged.sh`는 저장소 루트의 `.sln` 파일 중 알파벳 순으로 첫 번째 것을 사용하며, Unity가 생성한 솔루션이 미리 존재해야 합니다.
-- `dotnet format whitespace`와 `dotnet format style --diagnostics IDE0005 --severity info`를 모두 실행합니다(후자는 불필요한 `using` 지시문을 제거하며, `warn` 수준에서는 적용되지 않는 규칙입니다).
+- `dotnet format style --diagnostics IDE0005 IDE0161 UNT102 UNT103 --severity info`를 실행합니다(기본 `warn` 수준에서는 적용되지 않는 규칙들입니다).
 - 모든 스크립트는 `set -euo pipefail`을 사용합니다.
 
 ## 의존성 (대상 머신)

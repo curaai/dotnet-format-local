@@ -1,9 +1,0 @@
-{
-  "private": true,
-  "devDependencies": {
-    "lint-staged": "15.4.3"
-  },
-  "lint-staged": {
-    "*.cs": "bash scripts/dotnet-format-staged.sh"
-  }
-}
