@@ -6,16 +6,19 @@
 # - (4) pre-commit / scripts/dotnet-format-staged.sh / package.json 템플릿이 installer 에서 복사.
 #
 # 사용:
-#   bash apply-husky-user-gitconfig.sh <setup-project-dir-path>
+#   bash apply-husky-user-gitconfig.sh [옵션] [<setup-project-dir-path>]
 #   bash apply-husky-user-gitconfig.sh          # 인자 없으면 현재 디렉토리 기준
+#
+# 옵션:
+#   -f, --force   템플릿 버전이 installer 와 같아도 [4/4] 파일을 덮어씀
 #
 # 예시:
 #   bash apply-husky-user-gitconfig.sh C:/Users/admin/Documents/Projects/MyProject
-#   bash apply-husky-user-gitconfig.sh /c/Users/admin/Documents/Projects/MyProject
+#   bash apply-husky-user-gitconfig.sh --force /c/Users/admin/Documents/Projects/MyProject
 
 set -euo pipefail
 
-INSTALLER_VERSION="1"
+INSTALLER_VERSION="2"
 
 # npm 이 필요할 때: PATH 앞의 "node"가 Cursor 등 IDE 번들(node만 있고 npm 없음)이면 npm 을 못 찹니다.
 # 공식 Node.js 설치 경로를 PATH 앞에 넣어 실제 npm.cmd 를 쓰게 합니다.
@@ -66,9 +69,38 @@ require_npm() {
   exit 1
 }
 
-# 인자가 있으면 그 경로를, 없으면 환경변수 → 현재 디렉토리 순으로 사용
-if [[ $# -ge 1 ]]; then
-  TARGET_REPO_ROOT="$1"
+FORCE_INSTALL=0
+_arg_repo=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -f | --force)
+      FORCE_INSTALL=1
+      shift
+      ;;
+    -h | --help)
+      sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "ERROR: 알 수 없는 옵션: $1 (도움말: --help)" >&2
+      exit 1
+      ;;
+    *)
+      if [[ -n "$_arg_repo" ]]; then
+        echo "ERROR: 경로는 하나만 지정하세요: $1" >&2
+        exit 1
+      fi
+      _arg_repo="$1"
+      shift
+      ;;
+  esac
+done
+if [[ -n "$_arg_repo" ]]; then
+  TARGET_REPO_ROOT="$_arg_repo"
 else
   TARGET_REPO_ROOT="${TARGET_REPO_ROOT:-$(pwd)}"
 fi
@@ -231,10 +263,14 @@ _install_tpl() {
     cp "$_src" "$_dst"
     chmod +x "$_dst" 2>/dev/null || true
     echo "[4/4] Installed $_label (v${INSTALLER_VERSION})"
-  elif [[ "$_cur_ver" != "$INSTALLER_VERSION" ]]; then
+  elif [[ "$_cur_ver" != "$INSTALLER_VERSION" ]] || [[ "$FORCE_INSTALL" -eq 1 ]]; then
     cp "$_src" "$_dst"
     chmod +x "$_dst" 2>/dev/null || true
-    echo "[4/4] Updated $_label (v${_cur_ver:-?} → v${INSTALLER_VERSION})"
+    if [[ "$FORCE_INSTALL" -eq 1 && "$_cur_ver" == "$INSTALLER_VERSION" ]]; then
+      echo "[4/4] Force-updated $_label (v${INSTALLER_VERSION})"
+    else
+      echo "[4/4] Updated $_label (v${_cur_ver:-?} → v${INSTALLER_VERSION})"
+    fi
   else
     echo "[4/4] $_label already up to date (v${INSTALLER_VERSION}) — skip."
   fi
