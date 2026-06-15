@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>12</LangVersion>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <AssemblyName>MyAnalyzer</AssemblyName>
+    <RootNamespace>MyAnalyzer</RootNamespace>
+    <IsRoslynComponent>true</IsRoslynComponent>
+
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <!-- installer가 -p:AnalyzerDeployDir=<path> 로 경로를 주입할 수 있음; 없으면 저장소 기본 경로 사용 -->
+  <PropertyGroup>
+    <AnalyzerDeployDir Condition="'$(AnalyzerDeployDir)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\Assets\Plugins\Editor\Analyzers'))</AnalyzerDeployDir>
+  </PropertyGroup>
+
+  <!-- Release에서만: 최소 로그(-v:m)에서도 보이게 Importance=high -->
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Release'">
+    <Message Text="[MyAnalyzer PostBuild] Configuration=$(Configuration)" Importance="high" />
+    <Message Text="[MyAnalyzer PostBuild] Copy: $(TargetPath)" Importance="high" />
+    <Message Text="[MyAnalyzer PostBuild]  To: $(AnalyzerDeployDir)\" Importance="high" />
+    <MakeDir Directories="$(AnalyzerDeployDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(AnalyzerDeployDir)\" SkipUnchangedFiles="false" />
+    <Message Text="[MyAnalyzer PostBuild] Done." Importance="high" />
+  </Target>
+
+  <ItemGroup>
+    <!-- tools/ 하위 프로젝트의 obj/*.cs 가 기본 **/*.cs 글로브에 잡히지 않도록 제외 -->
+    <Compile Remove="tools/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+    MemoryPack.Generator에서 사용하는 버전으로 맞춤
+    -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="4.3.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" Version="4.3.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" Version="3.3.3" />
+  </ItemGroup>
+</Project>

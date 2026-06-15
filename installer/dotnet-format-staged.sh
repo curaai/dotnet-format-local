@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# @pre-commit-format v2
+# @pre-commit-format v3
 # Staged *.cs → dotnet format (repo 루트의 첫 번째 .sln 사용; Unity 가 생성한 솔루션)
 set -euo pipefail
 
@@ -33,4 +33,4 @@ done
 # 기본 --severity 는 warn → IDE0005(불필요 using) 등 suggestion 규칙은 적용되지 않음.
 # https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-format
 dotnet format "$sln" style --no-restore --diagnostics IDE0005 IDE0161 --severity info --include "${rel_files[@]}"
-dotnet format "$sln" analyzers --no-restore --diagnostics UNT102 UNT103 --severity info --include "${rel_files[@]}"
+dotnet format "$sln" analyzers --no-restore --severity info --include "${rel_files[@]}"

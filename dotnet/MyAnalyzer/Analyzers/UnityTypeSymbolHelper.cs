@@ -2,7 +2,7 @@
 
 using Microsoft.CodeAnalysis;
 
-namespace Analyzer;
+namespace MyAnalyzer;
 
 public static class UnityTypeSymbolHelper
 {

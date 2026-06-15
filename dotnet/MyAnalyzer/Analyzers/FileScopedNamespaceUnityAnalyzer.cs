@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Analyzer;
+namespace MyAnalyzer;
 
 /// <summary>
 /// UnityEngine.Object 파생 타입이 있는 소스는 file-scoped namespace를 쓰지 않도록 하고,

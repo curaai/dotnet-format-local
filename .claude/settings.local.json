@@ -3,7 +3,11 @@
     "allow": [
       "Bash(git *)",
       "Bash(bash *)",
-      "PowerShell(Get-Command *)"
+      "PowerShell(Get-Command *)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet clean *)",
+      "Bash(echo \"done\")",
+      "Bash(dotnet format *)"
     ]
   }
 }

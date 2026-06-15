@@ -10,7 +10,7 @@
 #   bash apply-husky-user-gitconfig.sh          # 인자 없으면 현재 디렉토리 기준
 #
 # 옵션:
-#   -f, --force   템플릿 버전이 installer 와 같아도 [4/4] 파일을 덮어씀
+#   -f, --force   템플릿 버전이 installer 와 같아도 [4/5] 파일을 덮어씀
 #
 # 예시:
 #   bash apply-husky-user-gitconfig.sh C:/Users/admin/Documents/Projects/MyProject
@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-INSTALLER_VERSION="2"
+INSTALLER_VERSION="3"
 
 # npm 이 필요할 때: PATH 앞의 "node"가 Cursor 등 IDE 번들(node만 있고 npm 없음)이면 npm 을 못 찹니다.
 # 공식 Node.js 설치 경로를 PATH 앞에 넣어 실제 npm.cmd 를 쓰게 합니다.
@@ -134,11 +134,11 @@ MARKER="# --- husky hooksPath: ${REPO_ROOT_NORMALIZED} ---"
 # ── 1. ~/.gitconfig includeIf 설정 ──────────────────────────────────────────
 mkdir -p "$INC_DIR"
 printf '%s\n' '[core]' '	hooksPath = .husky' >"$INC_FILE"
-echo "[1/4] Wrote $INC_FILE"
+echo "[1/5] Wrote $INC_FILE"
 
 touch "$GITCONFIG"
 if grep -qF "$MARKER" "$GITCONFIG" 2>/dev/null; then
-  echo "[1/4] Marker already present in $GITCONFIG — skip append."
+  echo "[1/5] Marker already present in $GITCONFIG — skip append."
 else
   {
     echo ""
@@ -147,7 +147,7 @@ else
     echo "	path = $INC_GITCONFIG_PATH"
     echo "$MARKER"
   } >>"$GITCONFIG"
-  echo "[1/4] Appended includeIf to $GITCONFIG"
+  echo "[1/5] Appended includeIf to $GITCONFIG"
 fi
 
 # ── 2. 저장소 git config 에서 core.hooksPath 제거 + .git/info/exclude 설정 ───
@@ -158,9 +158,9 @@ common_git="$(git -C "$TARGET_REPO_ROOT" rev-parse --path-format=absolute --git-
 if [[ -n "$common_git" && -f "$common_git/config" ]]; then
   if git config -f "$common_git/config" --get core.hooksPath >/dev/null 2>&1; then
     git config -f "$common_git/config" --unset core.hooksPath
-    echo "[2/4] Removed core.hooksPath from $common_git/config (now from user include)."
+    echo "[2/5] Removed core.hooksPath from $common_git/config (now from user include)."
   else
-    echo "[2/4] No core.hooksPath in $common_git/config (nothing to unset)."
+    echo "[2/5] No core.hooksPath in $common_git/config (nothing to unset)."
   fi
 else
   echo "WARN: could not resolve git-common-dir for $TARGET_REPO_ROOT — unset hooksPath manually if needed." >&2
@@ -172,10 +172,10 @@ if [[ -n "$common_git" ]]; then
   touch "$LOCAL_EXCLUDE"
   for _entry in '.husky/' 'package.json' 'scripts/dotnet-format-staged.sh'; do
     if grep -qxF "$_entry" "$LOCAL_EXCLUDE" 2>/dev/null; then
-      echo "[2/4] $_entry already in .git/info/exclude — skip."
+      echo "[2/5] $_entry already in .git/info/exclude — skip."
     else
       printf '\n%s\n' "$_entry" >> "$LOCAL_EXCLUDE"
-      echo "[2/4] Added $_entry to .git/info/exclude"
+      echo "[2/5] Added $_entry to .git/info/exclude"
     fi
   done
 fi
@@ -218,11 +218,11 @@ else
 
   if [[ $_needs_install -eq 1 ]]; then
     printf '{\n  "private": true,\n  "devDependencies": {\n    "lint-staged": "%s"\n  }\n}\n' "$_ls_ver" > "$HUSKY_PKG"
-    echo "[3/4] Installing lint-staged ${_ls_ver} → ${HUSKY_DEPS_DIR}"
+    echo "[3/5] Installing lint-staged ${_ls_ver} → ${HUSKY_DEPS_DIR}"
     require_npm
     ( cd "$HUSKY_DEPS_DIR" && npm install --no-fund --no-audit --loglevel=error )
   else
-    echo "[3/4] lint-staged already installed at ${HUSKY_DEPS_DIR} — skip."
+    echo "[3/5] lint-staged already installed at ${HUSKY_DEPS_DIR} — skip."
   fi
 
   if [[ -x "$LINT_STAGED_BIN" ]]; then
@@ -233,6 +233,7 @@ else
 fi
 
 # ── 4. pre-commit + dotnet format (lint-staged) 템플릿 설치/업데이트 ──────────
+# (4단계: husky 훅 파일 복사 → 5단계: Analyzer DLL 빌드·배포)
 # 설치된 파일의 버전이 INSTALLER_VERSION 과 다르면 덮어씌운다.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _tpl_pre="${SCRIPT_DIR}/installer/husky-pre-commit.sh"
@@ -262,17 +263,17 @@ _install_tpl() {
   if [[ ! -f "$_dst" ]]; then
     cp "$_src" "$_dst"
     chmod +x "$_dst" 2>/dev/null || true
-    echo "[4/4] Installed $_label (v${INSTALLER_VERSION})"
+    echo "[4/5] Installed $_label (v${INSTALLER_VERSION})"
   elif [[ "$_cur_ver" != "$INSTALLER_VERSION" ]] || [[ "$FORCE_INSTALL" -eq 1 ]]; then
     cp "$_src" "$_dst"
     chmod +x "$_dst" 2>/dev/null || true
     if [[ "$FORCE_INSTALL" -eq 1 && "$_cur_ver" == "$INSTALLER_VERSION" ]]; then
-      echo "[4/4] Force-updated $_label (v${INSTALLER_VERSION})"
+      echo "[4/5] Force-updated $_label (v${INSTALLER_VERSION})"
     else
-      echo "[4/4] Updated $_label (v${_cur_ver:-?} → v${INSTALLER_VERSION})"
+      echo "[4/5] Updated $_label (v${_cur_ver:-?} → v${INSTALLER_VERSION})"
     fi
   else
-    echo "[4/4] $_label already up to date (v${INSTALLER_VERSION}) — skip."
+    echo "[4/5] $_label already up to date (v${INSTALLER_VERSION}) — skip."
   fi
 }
 
@@ -284,6 +285,47 @@ _install_tpl "$_tpl_fmt" "$TARGET_REPO_ROOT/scripts/dotnet-format-staged.sh" \
 
 _install_tpl "$_tpl_pkg" "$TARGET_REPO_ROOT/package.json" \
   "package.json" "$(_read_pkg_version "$TARGET_REPO_ROOT/package.json")"
+
+# ── 5. dotnet/MyAnalyzer 소스 복사 + 빌드 → 대상 프로젝트에 배포 ─────────────
+_src_analyzer="${SCRIPT_DIR}/dotnet/MyAnalyzer"
+_dst_analyzer="${TARGET_REPO_ROOT}/dotnet/MyAnalyzer"
+
+if [[ ! -d "$_src_analyzer" ]]; then
+  echo "WARN: dotnet/MyAnalyzer 를 찾을 수 없습니다: $_src_analyzer — 건너뜁니다." >&2
+elif ! command -v dotnet >/dev/null 2>&1; then
+  echo "WARN: dotnet 를 찾을 수 없습니다. CustomAnalyzer 설치를 건너뜁니다." >&2
+else
+  # 5a. 소스 복사 (obj/, bin/, tools/ 제외)
+  echo "[5/5] Copying dotnet/MyAnalyzer → ${_dst_analyzer}"
+  mkdir -p "$_dst_analyzer"
+  while IFS= read -r _f; do
+    _rel="${_f#${_src_analyzer}/}"
+    _dst_f="${_dst_analyzer}/${_rel}"
+    mkdir -p "$(dirname "$_dst_f")"
+    cp "$_f" "$_dst_f"
+  done < <(find "$_src_analyzer" -type f \
+    -not -path "*/obj/*" \
+    -not -path "*/bin/*" \
+    -not -path "*/tools/*")
+  echo "      ✓ 소스 복사 완료"
+
+  # 5b. 대상 위치에서 빌드 → PostBuild가 ../../Assets/Plugins/Editor/Analyzers 에 DLL 자동 배포
+  echo "[5/5] Building MyAnalyzer → ${TARGET_REPO_ROOT}/Assets/Plugins/Editor/Analyzers"
+  dotnet build "${_dst_analyzer}/MyAnalyzer.csproj" \
+    --configuration Release \
+    --no-incremental \
+    --verbosity minimal
+  echo "      ✓ MyAnalyzer.dll 배포 완료"
+
+  # .meta 파일이 없으면 템플릿 복사
+  _meta_tpl="${SCRIPT_DIR}/installer/MyAnalyzer.dll.meta"
+  _meta_dst="${TARGET_REPO_ROOT}/Assets/Plugins/Editor/Analyzers/MyAnalyzer.dll.meta"
+  if [[ -f "$_meta_tpl" && ! -f "$_meta_dst" ]]; then
+    cp "$_meta_tpl" "$_meta_dst"
+    echo "      ✓ MyAnalyzer.dll.meta 설치됨 (RoslynAnalyzer 레이블 포함)"
+  fi
+
+fi
 
 echo ""
 echo "새 worktree 추가 시 별도 설치 불필요 — 이 스크립트를 다시 실행할 필요 없음."

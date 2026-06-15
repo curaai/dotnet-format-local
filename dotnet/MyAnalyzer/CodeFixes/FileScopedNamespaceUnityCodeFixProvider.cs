@@ -13,9 +13,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
-using Analyzer;
-
-namespace Analyzer.CodeFixes;
+namespace MyAnalyzer;
 
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(FileScopedNamespaceUnityCodeFixProvider))]
 [Shared]
