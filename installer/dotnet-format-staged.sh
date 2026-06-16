@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# @pre-commit-format v3
+# @pre-commit-format v4
 # Staged *.cs → dotnet format (repo 루트의 첫 번째 .sln 사용; Unity 가 생성한 솔루션)
 set -euo pipefail
 

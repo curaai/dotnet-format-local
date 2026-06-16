@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-INSTALLER_VERSION="3"
+INSTALLER_VERSION="4"
 
 # npm 이 필요할 때: PATH 앞의 "node"가 Cursor 등 IDE 번들(node만 있고 npm 없음)이면 npm 을 못 찹니다.
 # 공식 Node.js 설치 경로를 PATH 앞에 넣어 실제 npm.cmd 를 쓰게 합니다.

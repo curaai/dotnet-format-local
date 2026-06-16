@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# @pre-commit-format v3
+# @pre-commit-format v4
 # lint-staged (공통 git dir 의 husky-deps) — package.json 의 lint-staged 설정 실행
 set -e
 ROOT="$(git rev-parse --show-toplevel)"
