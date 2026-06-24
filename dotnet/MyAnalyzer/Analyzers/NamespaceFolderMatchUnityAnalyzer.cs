@@ -112,12 +112,23 @@ public class NamespaceFolderMatchUnityAnalyzer : DiagnosticAnalyzer
             .Where(static s => !string.IsNullOrEmpty(s))
             .ToArray();
 
-        // Assets/Scripts/GGrid/Runtime/ + RootNamespace=GGrid → 첫 세그먼트가 RootNamespace와
-        // 같으면 제거해 GGrid.GGrid.Runtime 중복을 방지한다.
-        if (segments.Length > 0 &&
-            string.Equals(segments[0], rootNamespace, System.StringComparison.OrdinalIgnoreCase))
+        // RootNamespace가 폴더 경로에 그대로 반복되는 경우 제거해 중복을 방지한다.
+        // e.g. RootNamespace=GGrid       + path=Assets/GGrid/Runtime/  → GGrid.Runtime
+        //      RootNamespace=GGrid.Data  + path=Assets/GGrid/Data/     → GGrid.Data
+        var rootParts = rootNamespace.Split('.');
+        if (segments.Length >= rootParts.Length)
         {
-            segments = segments.Skip(1).ToArray();
+            bool leadingMatch = true;
+            for (int i = 0; i < rootParts.Length; i++)
+            {
+                if (!string.Equals(segments[i], rootParts[i], System.StringComparison.OrdinalIgnoreCase))
+                {
+                    leadingMatch = false;
+                    break;
+                }
+            }
+            if (leadingMatch)
+                segments = segments.Skip(rootParts.Length).ToArray();
         }
 
         return segments.Length > 0
