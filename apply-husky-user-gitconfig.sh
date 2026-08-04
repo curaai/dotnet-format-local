@@ -10,11 +10,14 @@
 #   bash apply-husky-user-gitconfig.sh          # 인자 없으면 현재 디렉토리 기준
 #
 # 옵션:
-#   -f, --force   템플릿 버전이 installer 와 같아도 [4/5] 파일을 덮어씀
+#   -f, --force            템플릿 버전이 installer 와 같아도 [4/5] 파일을 덮어씀
+#   --skip-analyzer-copy   [5/5] dotnet/MyAnalyzer 소스 복사만 건너뜀 (대상 저장소에 이미
+#                           복사된 소스가 있어야 함). 빌드 + Assets 배포는 항상 실행됨.
 #
 # 예시:
 #   bash apply-husky-user-gitconfig.sh C:/Users/admin/Documents/Projects/MyProject
 #   bash apply-husky-user-gitconfig.sh --force /c/Users/admin/Documents/Projects/MyProject
+#   bash apply-husky-user-gitconfig.sh --skip-analyzer-copy /c/Users/admin/Documents/Projects/MyProject
 
 set -euo pipefail
 
@@ -70,6 +73,7 @@ require_npm() {
 }
 
 FORCE_INSTALL=0
+SKIP_ANALYZER_COPY=0
 _arg_repo=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -77,8 +81,12 @@ while [[ $# -gt 0 ]]; do
       FORCE_INSTALL=1
       shift
       ;;
+    --skip-analyzer-copy)
+      SKIP_ANALYZER_COPY=1
+      shift
+      ;;
     -h | --help)
-      sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     --)
@@ -286,28 +294,35 @@ _install_tpl "$_tpl_fmt" "$TARGET_REPO_ROOT/scripts/dotnet-format-staged.sh" \
 _install_tpl "$_tpl_pkg" "$TARGET_REPO_ROOT/package.json" \
   "package.json" "$(_read_pkg_version "$TARGET_REPO_ROOT/package.json")"
 
-# ── 5. dotnet/MyAnalyzer 소스 복사 + 빌드 → 대상 프로젝트에 배포 ─────────────
+# ── 5. dotnet/MyAnalyzer 소스 복사 + 빌드 → 대상 프로젝트에 배포 ──────────────
+# --skip-analyzer-copy 는 소스 복사(5a)만 건너뛴다. 빌드(5b)와 Assets 배포(5c)는 항상 실행된다.
 _src_analyzer="${SCRIPT_DIR}/dotnet/MyAnalyzer"
 _dst_analyzer="${TARGET_REPO_ROOT}/dotnet/MyAnalyzer"
 
-if [[ ! -d "$_src_analyzer" ]]; then
-  echo "WARN: dotnet/MyAnalyzer 를 찾을 수 없습니다: $_src_analyzer — 건너뜁니다." >&2
-elif ! command -v dotnet >/dev/null 2>&1; then
+if ! command -v dotnet >/dev/null 2>&1; then
   echo "WARN: dotnet 를 찾을 수 없습니다. CustomAnalyzer 설치를 건너뜁니다." >&2
+elif [[ "$SKIP_ANALYZER_COPY" == "1" && ! -f "${_dst_analyzer}/MyAnalyzer.csproj" ]]; then
+  echo "WARN: --skip-analyzer-copy 지정되었지만 ${_dst_analyzer} 에 기존 소스가 없습니다. 최초 설치 시에는 복사가 필요합니다 — 건너뜁니다." >&2
+elif [[ "$SKIP_ANALYZER_COPY" != "1" && ! -d "$_src_analyzer" ]]; then
+  echo "WARN: dotnet/MyAnalyzer 를 찾을 수 없습니다: $_src_analyzer — 건너뜁니다." >&2
 else
-  # 5a. 소스 복사 (obj/, bin/, tools/ 제외)
-  echo "[5/5] Copying dotnet/MyAnalyzer → ${_dst_analyzer}"
-  mkdir -p "$_dst_analyzer"
-  while IFS= read -r _f; do
-    _rel="${_f#${_src_analyzer}/}"
-    _dst_f="${_dst_analyzer}/${_rel}"
-    mkdir -p "$(dirname "$_dst_f")"
-    cp "$_f" "$_dst_f"
-  done < <(find "$_src_analyzer" -type f \
-    -not -path "*/obj/*" \
-    -not -path "*/bin/*" \
-    -not -path "*/tools/*")
-  echo "      ✓ 소스 복사 완료"
+  if [[ "$SKIP_ANALYZER_COPY" == "1" ]]; then
+    echo "[5/5] --skip-analyzer-copy 지정됨 — 소스 복사를 건너뜁니다 (기존 ${_dst_analyzer} 사용)"
+  else
+    # 5a. 소스 복사 (obj/, bin/, tools/ 제외)
+    echo "[5/5] Copying dotnet/MyAnalyzer → ${_dst_analyzer}"
+    mkdir -p "$_dst_analyzer"
+    while IFS= read -r _f; do
+      _rel="${_f#${_src_analyzer}/}"
+      _dst_f="${_dst_analyzer}/${_rel}"
+      mkdir -p "$(dirname "$_dst_f")"
+      cp "$_f" "$_dst_f"
+    done < <(find "$_src_analyzer" -type f \
+      -not -path "*/obj/*" \
+      -not -path "*/bin/*" \
+      -not -path "*/tools/*")
+    echo "      ✓ 소스 복사 완료"
+  fi
 
   # 5b. 대상 위치에서 빌드 → PostBuild가 ../../Assets/Plugins/Editor/Analyzers 에 DLL 자동 배포
   echo "[5/5] Building MyAnalyzer → ${TARGET_REPO_ROOT}/Assets/Plugins/Editor/Analyzers"
@@ -316,6 +331,26 @@ else
     --no-incremental \
     --verbosity minimal
   echo "      ✓ MyAnalyzer.dll 배포 완료"
+
+  # 5c. 배포된 DLL 옆에 버전 정보 기록 (dotnet-format-local 저장소에서 dotnet/MyAnalyzer 를
+  # 마지막으로 변경한 커밋 기준 — 대상 프로젝트에서 어떤 소스로 빌드됐는지 추적용)
+  _analyzer_deploy_dir="${TARGET_REPO_ROOT}/Assets/Plugins/Editor/Analyzers"
+  _version_md="${_analyzer_deploy_dir}/MyAnalyzer.md"
+  if git -C "$SCRIPT_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+    _av_commit="$(git -C "$SCRIPT_DIR" log -1 --format='%h (%ad)' --date=short -- dotnet/MyAnalyzer 2>/dev/null || true)"
+    _av_dirty=""
+    git -C "$SCRIPT_DIR" diff --quiet -- dotnet/MyAnalyzer 2>/dev/null || _av_dirty=" [커밋되지 않은 변경 포함]"
+  else
+    _av_commit="unknown (dotnet-format-local 이 git 저장소가 아님)"
+    _av_dirty=""
+  fi
+  {
+    echo "# MyAnalyzer"
+    echo ""
+    echo "- Source commit: ${_av_commit}${_av_dirty}"
+    echo "- Installed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+  } >"$_version_md"
+  echo "      ✓ MyAnalyzer.md 버전 정보 기록됨"
 
   # .meta 파일이 없으면 템플릿 복사
   _meta_tpl="${SCRIPT_DIR}/installer/MyAnalyzer.dll.meta"

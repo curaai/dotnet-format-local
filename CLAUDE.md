@@ -34,11 +34,12 @@ utils/
 bash apply-husky-user-gitconfig.sh <대상-저장소-경로>
 ```
 
-스크립트 동작 순서 (4단계):
+스크립트 동작 순서 (5단계):
 1. `~/.gitconfig`에 `[includeIf "gitdir/i:<저장소-루트>/"]` 항목을 추가하여 해당 저장소 안에서만 `core.hooksPath = .husky`가 적용되도록 합니다.
 2. 저장소 자체 git config에 설정된 `core.hooksPath`를 제거합니다(사용자 include로 위임).
 3. `<git-common-dir>/husky-deps/`에 `lint-staged`를 설치합니다 — 모든 worktree가 공유하며 커밋되지 않습니다.
 4. 3개의 템플릿 파일을 대상 저장소에 복사합니다. 각 파일에 `@pre-commit-format v<N>` 버전 마커가 있어 기존 파일의 버전이 다르면 덮어씌우고, 같으면 건너뜁니다.
+5. `dotnet/MyAnalyzer` 소스를 대상 저장소로 복사하고 빌드하여 `Assets/Plugins/Editor/Analyzers/MyAnalyzer.dll`로 배포합니다. `--skip-analyzer-copy` 옵션은 소스 복사만 건너뜁니다(대상 저장소에 이미 복사된 소스가 있어야 함) — 빌드와 배포는 항상 실행됩니다. 배포된 DLL 옆에 `MyAnalyzer.md`를 생성해 소스 커밋(`dotnet-format-local`의 `dotnet/MyAnalyzer` 마지막 변경 커밋)과 설치 시각을 기록합니다.
 
 ## 아키텍처
 
@@ -46,7 +47,7 @@ bash apply-husky-user-gitconfig.sh <대상-저장소-경로>
 - `core.hooksPath`는 저장소 config가 아닌 `~/.gitconfig` `includeIf`로 설정되므로, 새 worktree를 추가해도 설정 스크립트를 재실행할 필요가 없습니다.
 - `lint-staged`는 git common dir(`.git/husky-deps/`) 안에 설치되어 모든 worktree가 단일 설치본을 공유합니다.
 - `dotnet-format-staged.sh`는 저장소 루트의 `.sln` 파일 중 알파벳 순으로 첫 번째 것을 사용하며, Unity가 생성한 솔루션이 미리 존재해야 합니다.
-- `dotnet format style --severity warning`, `dotnet format style --diagnostics IDE1006 --severity info`, `dotnet format analyzers --severity info` 3단계로 실행합니다. IDE1006(네이밍 규칙)은 기본 `suggestion` 수준이라 별도로 `info` 심각도를 지정해야 적용됩니다.
+- `dotnet format --severity info` (서브커맨드 없이) 한 번 호출로 whitespace/style/analyzers를 모두 실행합니다. `--severity info`는 info(suggestion) 이상을 전부 포함하므로 IDE1006(네이밍 규칙) 등 suggestion 수준 규칙도 함께 적용됩니다.
 - 모든 스크립트는 `set -euo pipefail`을 사용합니다.
 
 ## 의존성 (대상 머신)
