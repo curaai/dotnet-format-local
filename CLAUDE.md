@@ -39,7 +39,7 @@ bash apply-husky-user-gitconfig.sh <대상-저장소-경로>
 2. 저장소 자체 git config에 설정된 `core.hooksPath`를 제거합니다(사용자 include로 위임).
 3. `<git-common-dir>/husky-deps/`에 `lint-staged`를 설치합니다 — 모든 worktree가 공유하며 커밋되지 않습니다.
 4. 3개의 템플릿 파일을 대상 저장소에 복사합니다. 각 파일에 `@pre-commit-format v<N>` 버전 마커가 있어 기존 파일의 버전이 다르면 덮어씌우고, 같으면 건너뜁니다.
-5. `dotnet/MyAnalyzer` 소스를 대상 저장소로 복사하고 빌드하여 `Assets/Plugins/Editor/Analyzers/MyAnalyzer.dll`로 배포합니다. `--skip-analyzer-copy` 옵션은 소스 복사만 건너뜁니다(대상 저장소에 이미 복사된 소스가 있어야 함) — 빌드와 배포는 항상 실행됩니다. 배포된 DLL 옆에 `MyAnalyzer.md`를 생성해 소스 커밋(`dotnet-format-local`의 `dotnet/MyAnalyzer` 마지막 변경 커밋)과 설치 시각을 기록합니다.
+5. installer 저장소의 `dotnet/MyAnalyzer`에서 Release 빌드하고, `-p:AnalyzerDeployDir`로 대상 프로젝트 `Assets/Plugins/Editor/Analyzers/MyAnalyzer.dll`에 배포합니다(대상 저장소로 소스 복사 없음). 배포된 DLL 옆에 `MyAnalyzer.md`를 생성해 소스 커밋(`dotnet-format-local`의 `dotnet/MyAnalyzer` 마지막 변경 커밋)과 설치 시각을 기록합니다.
 
 ## 아키텍처
 
