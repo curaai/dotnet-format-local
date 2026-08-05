@@ -47,7 +47,8 @@ bash apply-husky-user-gitconfig.sh <대상-저장소-경로>
 - `core.hooksPath`는 저장소 config가 아닌 `~/.gitconfig` `includeIf`로 설정되므로, 새 worktree를 추가해도 설정 스크립트를 재실행할 필요가 없습니다.
 - `lint-staged`는 git common dir(`.git/husky-deps/`) 안에 설치되어 모든 worktree가 단일 설치본을 공유합니다.
 - `dotnet-format-staged.sh`는 저장소 루트의 `.sln` 파일 중 알파벳 순으로 첫 번째 것을 사용하며, Unity가 생성한 솔루션이 미리 존재해야 합니다.
-- `dotnet format --severity info` (서브커맨드 없이) 한 번 호출로 whitespace/style/analyzers를 모두 실행합니다. `--severity info`는 info(suggestion) 이상을 전부 포함하므로 IDE1006(네이밍 규칙) 등 suggestion 수준 규칙도 함께 적용됩니다.
+- `dotnet format --severity info` (서브커맨드 없이) 한 번 호출로 whitespace/style/analyzers를 모두 실행합니다. `--severity info`는 info(suggestion) 이상을 전부 포함하므로 IDE0005 등도 함께 적용됩니다.
+- private 필드 `_` 접두사는 IDE1006(내장 NamingStyleCodeFixProvider 가 FixAll 미지원) 대신 `UNT206` + CodeFix로 자동 수정합니다.
 - 모든 스크립트는 `set -euo pipefail`을 사용합니다.
 
 ## 의존성 (대상 머신)
