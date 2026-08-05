@@ -123,6 +123,10 @@ if ! git -C "$TARGET_REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
   exit 1
 fi
 
+# `.` 등 상대 경로를 절대 경로로 고정한다. 그렇지 않으면 -p:AnalyzerDeployDir 이
+# MSBuild 에서 csproj 기준 상대 경로로 풀려 installer 안에 Assets/ 가 생긴다.
+TARGET_REPO_ROOT="$(git -C "$TARGET_REPO_ROOT" rev-parse --show-toplevel)"
+
 echo "프로젝트 경로: $TARGET_REPO_ROOT"
 INC_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dotnet-format-git"
 INC_FILE="$INC_DIR/hooks-path.inc"
