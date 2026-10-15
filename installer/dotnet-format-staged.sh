@@ -28,8 +28,10 @@ print(os.path.relpath(os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
 " "$f" "$ROOT")"
   # Windows 경로 구분자를 dotnet format 이 받는 슬래시로 통일
   rel="${rel//\\//}"
-  rel_files+=("$rel")
+  # Assets/Scripts 하위만 포맷한다 (ExternalAssets 등 외부 에셋은 제외)
+  [[ "$rel" == Assets/Scripts/* ]] && rel_files+=("$rel")
 done
+(( ${#rel_files[@]} == 0 )) && exit 0
 
 # 서브커맨드(whitespace/style/analyzers) 없이 호출 → 셋을 한 번의 dotnet 실행으로 처리.
 # --severity info 는 info(suggestion) 이상 전부 포함하므로 IDE0005 등도 함께 적용됨.

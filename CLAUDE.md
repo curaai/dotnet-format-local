@@ -25,7 +25,7 @@ utils/
 | `apply-husky-user-gitconfig.sh` | **메인 설정 스크립트.** 개발자 머신당 1회 실행하여 전체 설정을 완료합니다. |
 | `installer/husky-pre-commit.sh` | `.husky/pre-commit` 템플릿 — 대상 프로젝트에 복사됩니다. |
 | `installer/root-package.json` | `package.json` 템플릿 — 대상 프로젝트에 없을 경우 복사됩니다. |
-| `installer/dotnet-format-staged.sh` | `scripts/dotnet-format-staged.sh` 템플릿 — 스테이징된 `*.cs` 파일에 `dotnet format`을 실행합니다. |
+| `installer/dotnet-format-staged.sh` | `scripts/dotnet-format-staged.sh` 템플릿 — 스테이징된 `Assets/Scripts` 하위 `*.cs` 파일에 `dotnet format`을 실행합니다. |
 | `utils/fixup-by-lastcommit.sh` | 독립 유틸리티: 변경된 각 파일에 대해 해당 파일의 마지막 커밋을 대상으로 `--fixup` 커밋을 생성합니다. |
 
 ## 설정 방법
